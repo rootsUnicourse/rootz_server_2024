@@ -1,0 +1,36 @@
+import express from 'express';
+import mongoose from 'mongoose';
+import bodyParser from 'body-parser';
+import cors from 'cors';
+import { config } from 'dotenv';
+import companyRoutes from './routes/companiesRoutes.js'; // Renamed to "companies" for correct plural form
+import usersRoute from './routes/userRoutes.js';
+import authRoutes from './routes/authRoutes.js';
+
+config(); // Load environment variables
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// Middleware
+app.use(bodyParser.json({ limit: '100mb' }));
+app.use(bodyParser.urlencoded({ limit: '100mb', extended: true }));
+app.use(cors());
+
+// Connect to MongoDB
+mongoose.connect(process.env.MONGODB_URI)
+  .then(() => console.log('Connected to MongoDB'))
+  .catch(err => console.error('Could not connect to MongoDB', err));
+
+// Define routes
+app.use('/companies', companyRoutes);
+app.use('/users', usersRoute);
+app.use('/auth', authRoutes);
+
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
+
+app.get('/', (req, res) => {
+  res.send('Hello, Rootz!');
+});
