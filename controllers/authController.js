@@ -123,6 +123,7 @@ const googleLogin = async (req, res) => {
     });
 
     const payload = ticket.getPayload(); // Get user info from the payload
+    console.log(payload);
 
     // Check if the user exists in the database
     let user = await User.findOne({ email: payload['email'] });
@@ -130,20 +131,24 @@ const googleLogin = async (req, res) => {
     if (!user) {
       // Create a new user with information from Google
       user = new User({
-        firstName: payload['given_name'],
-        lastName: payload['family_name'],
+        name: `${payload['given_name']} ${payload['family_name']}`,
         email: payload['email'],
         emailVerified: true, // Email is verified by Google
         isEditor: false, // Default value, adjust as necessary
-        profilePicture: payload['picture'] || '', // Use Google profile picture if available
+        profilePicture: payload['picture'], // Use Google profile picture if available
         password: 'google auth',
       });
 
+      await user.save();
+    } else if (!user.profilePicture) {
+      // Update user's profile picture if it's not already set
+      user.profilePicture = payload['picture'];
       await user.save();
     }
 
     // Generate a token for the session
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '2h' });
+    console.log(token);
 
     // Respond with the token and user information
     res.json({ token, user });
