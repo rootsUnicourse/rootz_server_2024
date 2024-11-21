@@ -16,7 +16,7 @@ const UserSchema = new mongoose.Schema({
   resetPasswordToken: { type: String, required: false }, // Field for the password reset token
   resetPasswordExpire: { type: Date, required: false }, // Field for the expiration time of the password reset token
   createdAt: { type: Date, default: Date.now },
-  likedCompanies: [{ type: mongoose.Schema.Types.ObjectId, ref: 'CompanyObject' }],
+  likedShops: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Shop' }], // Updated to reference the Shop model
   wallet: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Wallet'

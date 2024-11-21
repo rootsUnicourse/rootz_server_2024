@@ -10,8 +10,10 @@ router.post('/request-password-reset', userController.requestPasswordReset);
 // Route to submit a new password
 router.post('/submit-new-password', userController.submitNewPassword);
 
-router.post('/like-company', isAuthenticated, userController.likeCompany);
+// Route to like a shop
+router.post('/like-shop', isAuthenticated, userController.likeShop);
 
-router.get('/liked-companies', isAuthenticated, userController.getLikedCompanies);
+// Route to get liked shops
+router.get('/liked-shops', isAuthenticated, userController.getLikedShops);
 
 export default router;

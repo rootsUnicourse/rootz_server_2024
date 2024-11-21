@@ -2,7 +2,7 @@ import User from '../modules/User.js';
 import crypto from 'crypto';
 import nodemailer from 'nodemailer';
 import bcrypt from 'bcryptjs';
-import CompanyObject from '../modules/company.js';
+import Shop from '../modules/shop.js'; // Updated import for shops
 
 const getAllUsers = async (req, res) => {
   try {
@@ -99,48 +99,41 @@ const submitNewPassword = async (req, res) => {
   }
 };
 
-const likeCompany = async (req, res) => {
+const likeShop = async (req, res) => {
   try {
     const userId = req.user.userId; // Get user ID from the authenticated user
-    const { companyId } = req.body;
+    const { shopId } = req.body;
 
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    if (user.likedCompanies.includes(companyId)) {
-      console.log("yes");
-
-      // If the company is already liked, unlike it
-      console.log('Before filter:', user.likedCompanies);
-      user.likedCompanies = user.likedCompanies.filter(
-        (id) => id.toString() !== companyId.toString()
+    if (user.likedShops.includes(shopId)) {
+      // If the shop is already liked, unlike it
+      user.likedShops = user.likedShops.filter(
+        (id) => id.toString() !== shopId.toString()
       );
-      console.log('After filter:', user.likedCompanies);
-
-
       await user.save();
-      return res.status(200).json({ message: 'Company unliked successfully', likedCompanies: user.likedCompanies });
+      return res.status(200).json({ message: 'Shop unliked successfully', likedShops: user.likedShops });
     }
 
-    // If the company is not liked, add it to the liked companies
-    user.likedCompanies.push(companyId);
+    // If the shop is not liked, add it to the liked shops
+    user.likedShops.push(shopId);
     await user.save();
 
-    res.status(200).json({ message: 'Company liked successfully', likedCompanies: user.likedCompanies });
+    res.status(200).json({ message: 'Shop liked successfully', likedShops: user.likedShops });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-
-const getLikedCompanies = async (req, res) => {
+const getLikedShops = async (req, res) => {
   try {
     const userId = req.user.userId;
 
-    const user = await User.findById(userId).populate('likedCompanies');
+    const user = await User.findById(userId).populate('likedShops');
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    res.status(200).json(user.likedCompanies);
+    res.status(200).json(user.likedShops);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -150,6 +143,6 @@ export default {
   getAllUsers,
   requestPasswordReset,
   submitNewPassword,
-  getLikedCompanies,
-  likeCompany
+  getLikedShops,
+  likeShop
 };
