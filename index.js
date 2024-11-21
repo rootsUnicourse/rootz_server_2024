@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 import bodyParser from 'body-parser';
 import cors from 'cors';
 import { config } from 'dotenv';
-import companyRoutes from './routes/companiesRoutes.js'; // Renamed to "companies" for correct plural form
+import shopRoutes from './routes/shopRoutes.js'; // Updated to "shops" for correct naming
 import usersRoute from './routes/userRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 
@@ -23,7 +23,7 @@ mongoose.connect(process.env.MONGODB_URI)
   .catch(err => console.error('Could not connect to MongoDB', err));
 
 // Define routes
-app.use('/companies', companyRoutes);
+app.use('/shops', shopRoutes); // Changed "companies" to "shops"
 app.use('/users', usersRoute);
 app.use('/auth', authRoutes);
 
