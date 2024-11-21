@@ -22,7 +22,8 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.8.1",
     "nodemailer": "^6.9.16",
-    "passport": "^0.7.0"
+    "passport": "^0.7.0",
+    "punycode": "^2.3.1"
   },
   "devDependencies": {
     "nodemon": "^3.1.7"
