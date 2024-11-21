@@ -37,7 +37,6 @@ export const getCompanyByUrl = async (req, res) => {
     let { url } = req.body;
     url = new URL(url).origin;  // This will remove extra parameters
 
-    console.log(url);
     try {
         const company = await CompanyObject.findOne({ siteUrl: { $regex: url, $options: 'i' } });
         if (company) {

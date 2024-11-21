@@ -148,7 +148,6 @@ const googleLogin = async (req, res) => {
 
     // Generate a token for the session
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '2h' });
-    console.log(token);
 
     // Respond with the token and user information
     res.json({ token, user });

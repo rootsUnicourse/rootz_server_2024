@@ -102,7 +102,6 @@ const submitNewPassword = async (req, res) => {
 const likeCompany = async (req, res) => {
   try {
       const userId = req.user.userId; 
-      console.log(userId);
       
       const { companyId } = req.body;
 
