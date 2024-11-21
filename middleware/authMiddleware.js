@@ -1,8 +1,7 @@
 // middleware/authMiddleware.js
-const User = require('../models/User');
-const jwt = require('jsonwebtoken');
+import jwt from 'jsonwebtoken';
 
-const isAuthenticated = (req, res, next) => {
+export const isAuthenticated = (req, res, next) => {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -19,5 +18,3 @@ const isAuthenticated = (req, res, next) => {
     return res.status(401).json({ message: 'Invalid or expired token' });
   }
 };
-
-module.exports = { isAuthenticated };
