@@ -35,7 +35,7 @@ const requestPasswordReset = async (req, res) => {
       service: 'gmail', // For Gmail, or use another service
       auth: {
         user: process.env.EMAIL, // Your email
-        pass: process.env.EMAIL_PASSWORD, // Your email account password
+        pass: process.env.APP_PASSWORD, // Your email account password
       },
     });
 
