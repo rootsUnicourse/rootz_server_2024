@@ -123,7 +123,6 @@ const googleLogin = async (req, res) => {
     });
 
     const payload = ticket.getPayload(); // Get user info from the payload
-    console.log(payload);
 
     // Check if the user exists in the database
     let user = await User.findOne({ email: payload['email'] });
