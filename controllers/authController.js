@@ -7,7 +7,6 @@ import Wallet from "../modules/wallet.js";
 
 const client = new OAuth2Client(process.env.CLIENT_ID);
 
-// User registration
 const register = async (req, res) => {
   try {
     const { name, email, password, parentId } = req.body; // Accept parentId
@@ -16,9 +15,14 @@ const register = async (req, res) => {
     // Generate a random verification code
     const verificationCode = Math.floor(100000 + Math.random() * 900000).toString(); // Generates a 6-digit code
 
-    // Find or create the parent user
     let parentUser;
-    if (parentId) {
+
+    // Check if the user being registered is the root user
+    if (email.toLowerCase().trim() === 'amit@rootz.website') {
+      // Root user does not have a parent
+      parentUser = null;
+    } else if (parentId) {
+      // Find the parent user by parentId
       parentUser = await User.findById(parentId);
       if (!parentUser) {
         return res.status(400).json({ message: 'Invalid parent ID.' });
@@ -45,7 +49,7 @@ const register = async (req, res) => {
       password: hashedPassword,
       verificationCode, // Store this code with the user record
       emailVerified: false, // Initially, the user is not verified
-      parent: parentUser._id, // Set the parent
+      parent: parentUser ? parentUser._id : undefined, // Set the parent if not null
     });
 
     await newUser.save();
@@ -158,13 +162,19 @@ const googleLogin = async (req, res) => {
 
     const payload = ticket.getPayload(); // Get user info from the payload
 
+    const email = payload['email'].toLowerCase().trim();
+
     // Check if the user exists in the database
-    let user = await User.findOne({ email: payload['email'] });
+    let user = await User.findOne({ email });
 
     if (!user) {
-      // Find or create the parent user
       let parentUser;
-      if (parentId) {
+
+      // Check if the user being logged in is the root user
+      if (email === 'amit@rootz.website') {
+        // Root user does not have a parent
+        parentUser = null;
+      } else if (parentId) {
         parentUser = await User.findById(parentId);
         if (!parentUser) {
           return res.status(400).json({ message: 'Invalid parent ID.' });
@@ -187,11 +197,11 @@ const googleLogin = async (req, res) => {
       // Create a new user with information from Google
       user = new User({
         name: `${payload['given_name']} ${payload['family_name']}`,
-        email: payload['email'],
+        email: email,
         emailVerified: true, // Email is verified by Google
         profilePicture: payload['picture'], // Use Google profile picture if available
         password: 'google auth',
-        parent: parentUser._id, // Set the parent
+        parent: parentUser ? parentUser._id : undefined, // Set the parent if not null
       });
 
       await user.save();
@@ -241,6 +251,7 @@ const googleLogin = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
 
 export default {
   register,
