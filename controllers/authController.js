@@ -15,13 +15,28 @@ const register = async (req, res) => {
     // Generate a random verification code
     const verificationCode = Math.floor(100000 + Math.random() * 900000).toString(); // Generates a 6-digit code
 
-    await User.create({
+    // Create a new user
+    const newUser = await User.create({
       name,
       email,
       password: hashedPassword,
       verificationCode, // Store this code with the user record
       isVerified: false, // Initially, the user is not verified
     });
+
+    // Create an empty wallet for the new user
+    const newWallet = await Wallet.create({
+      user: newUser._id, // Link wallet to the new user
+      moneyEarned: 0,
+      moneyWaiting: 0,
+      moneyApproved: 0,
+      cashWithdrawn: 0,
+      transactions: [],
+    });
+
+    // Link the wallet to the user
+    newUser.wallet = newWallet._id;
+    await newUser.save();
 
     // Send the verification email with the code
     await sendVerificationEmail(email, verificationCode);
@@ -139,10 +154,41 @@ const googleLogin = async (req, res) => {
       });
 
       await user.save();
-    } else if (!user.profilePicture) {
-      // Update user's profile picture if it's not already set
-      user.profilePicture = payload['picture'];
+
+      // Create an empty wallet for the new user
+      const newWallet = await Wallet.create({
+        user: user._id, // Link wallet to the new user
+        moneyEarned: 0,
+        moneyWaiting: 0,
+        moneyApproved: 0,
+        cashWithdrawn: 0,
+        transactions: [],
+      });
+
+      // Link the wallet to the user
+      user.wallet = newWallet._id;
       await user.save();
+    } else {
+      // Update user's profile picture if it's not already set
+      if (!user.profilePicture) {
+        user.profilePicture = payload['picture'];
+        await user.save();
+      }
+
+      // Check if the user already has a wallet; if not, create one
+      if (!user.wallet) {
+        const newWallet = await Wallet.create({
+          user: user._id,
+          moneyEarned: 0,
+          moneyWaiting: 0,
+          moneyApproved: 0,
+          cashWithdrawn: 0,
+          transactions: [],
+        });
+
+        user.wallet = newWallet._id;
+        await user.save();
+      }
     }
 
     // Generate a token for the session
@@ -153,8 +199,8 @@ const googleLogin = async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
-
 };
+
 
 export default {
   register,

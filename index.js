@@ -6,6 +6,8 @@ import { config } from 'dotenv';
 import shopRoutes from './routes/shopRoutes.js';
 import usersRoute from './routes/userRoutes.js';
 import authRoutes from './routes/authRoutes.js';
+import walletRoutes from "./routes/walletRoutes.js";
+import { isAuthenticated } from './middleware/authMiddleware.js';
 
 config(); // Load environment variables
 
@@ -26,6 +28,7 @@ mongoose.connect(process.env.MONGODB_URI)
 app.use('/shops', shopRoutes);
 app.use('/users', usersRoute);
 app.use('/auth', authRoutes);
+app.use("/wallet", isAuthenticated, walletRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
