@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import nodemailer from 'nodemailer';
 import { OAuth2Client } from 'google-auth-library';
+import Wallet from "../modules/wallet.js";
 
 const client = new OAuth2Client(process.env.CLIENT_ID);
 
