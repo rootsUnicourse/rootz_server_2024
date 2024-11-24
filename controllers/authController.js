@@ -47,7 +47,7 @@ const sendVerificationEmail = async (userEmail, verificationCode) => {
     });
 
     const mailOptions = {
-      from: process.env.EMAIL, // Sender address
+      from: "Rootz", // Sender address
       to: userEmail, // Recipient address
       subject: 'Verify Your Email Address',
       html: `

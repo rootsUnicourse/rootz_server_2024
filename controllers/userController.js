@@ -42,7 +42,7 @@ const requestPasswordReset = async (req, res) => {
 
     // Define mail options
     const mailOptions = {
-      from: process.env.EMAIL, // Sender address
+      from: "Rootz", // Sender address
       to: user.email, // Recipient address
       subject: 'Password Reset Request',
       html: `

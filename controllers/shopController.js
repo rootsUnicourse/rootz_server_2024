@@ -14,7 +14,7 @@ export const getShopBySearch = async (req, res) => {
     try {
         const regex = new RegExp(searchQuery, "i"); // 'i' for case-insensitive
         const shops = await Shop.find({ title: regex });
-        res.status(200).json(shops); // Return the array directly
+        res.status(200).json(shops);
     } catch (error) {
         res.status(404).json({ message: error.message });
     }
