@@ -13,6 +13,30 @@ const getAllUsers = async (req, res) => {
   }
 };
 
+// Get user profile with family tree
+const getProfile = async (req, res) => {
+  try {
+    const userId = req.user.userId; // Assuming JWT middleware sets req.user.userId
+    const user = await User.findById(userId)
+      .populate('wallet')
+      .populate({
+        path: 'children',
+        populate: {
+          path: 'children', // This will populate grandchildren
+          model: 'User',
+        },
+      });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found!' });
+    }
+
+    res.json({ user });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 const requestPasswordReset = async (req, res) => {
   try {
     const { email } = req.body;
@@ -141,8 +165,9 @@ const getLikedShops = async (req, res) => {
 
 export default {
   getAllUsers,
+  getProfile, // Export the new getProfile function
   requestPasswordReset,
   submitNewPassword,
   getLikedShops,
-  likeShop
+  likeShop,
 };

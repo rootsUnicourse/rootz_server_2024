@@ -10,20 +10,45 @@ const client = new OAuth2Client(process.env.CLIENT_ID);
 // User registration
 const register = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, parentId } = req.body; // Accept parentId
     const hashedPassword = await bcrypt.hash(password, 12);
 
     // Generate a random verification code
     const verificationCode = Math.floor(100000 + Math.random() * 900000).toString(); // Generates a 6-digit code
 
+    // Find or create the parent user
+    let parentUser;
+    if (parentId) {
+      parentUser = await User.findById(parentId);
+      if (!parentUser) {
+        return res.status(400).json({ message: 'Invalid parent ID.' });
+      }
+    } else {
+      // Assign rootz as the parent
+      parentUser = await User.findOne({ email: 'amit@rootz.website' });
+      if (!parentUser) {
+        // Create the rootz user if it doesn't exist
+        parentUser = new User({
+          name: 'Rootz',
+          email: 'amit@rootz.website',
+          password: await bcrypt.hash('rootzpassword', 12), // Use a secure password
+          emailVerified: true,
+        });
+        await parentUser.save();
+      }
+    }
+
     // Create a new user
-    const newUser = await User.create({
+    const newUser = new User({
       name,
       email,
       password: hashedPassword,
       verificationCode, // Store this code with the user record
-      isVerified: false, // Initially, the user is not verified
+      emailVerified: false, // Initially, the user is not verified
+      parent: parentUser._id, // Set the parent
     });
+
+    await newUser.save();
 
     // Create an empty wallet for the new user
     const newWallet = await Wallet.create({
@@ -75,14 +100,7 @@ const sendVerificationEmail = async (userEmail, verificationCode) => {
     };
 
     // Send verification email
-    transporter.sendMail(mailOptions, (error, info) => {
-      if (error) {
-        console.log('Error sending verification email: ', error);
-        throw error; // Or handle this error appropriately
-      } else {
-        console.log('Verification email sent: ' + info.response);
-      }
-    });
+    await transporter.sendMail(mailOptions);
   } catch (error) {
     console.error('sendVerificationEmail error:', error);
     throw error; // Ensure this error is caught or handled where the function is called
@@ -129,7 +147,7 @@ const login = async (req, res) => {
 
 // Google login
 const googleLogin = async (req, res) => {
-  const { tokenId } = req.body; // ID token provided by Google on the client side
+  const { tokenId, parentId } = req.body; // Accept parentId
 
   try {
     // Verify the ID token
@@ -144,14 +162,36 @@ const googleLogin = async (req, res) => {
     let user = await User.findOne({ email: payload['email'] });
 
     if (!user) {
+      // Find or create the parent user
+      let parentUser;
+      if (parentId) {
+        parentUser = await User.findById(parentId);
+        if (!parentUser) {
+          return res.status(400).json({ message: 'Invalid parent ID.' });
+        }
+      } else {
+        // Assign rootz as the parent
+        parentUser = await User.findOne({ email: 'amit@rootz.website' });
+        if (!parentUser) {
+          // Create the rootz user if it doesn't exist
+          parentUser = new User({
+            name: 'Rootz',
+            email: 'amit@rootz.website',
+            password: await bcrypt.hash('rootzpassword', 12),
+            emailVerified: true,
+          });
+          await parentUser.save();
+        }
+      }
+
       // Create a new user with information from Google
       user = new User({
         name: `${payload['given_name']} ${payload['family_name']}`,
         email: payload['email'],
         emailVerified: true, // Email is verified by Google
-        isEditor: false, // Default value, adjust as necessary
         profilePicture: payload['picture'], // Use Google profile picture if available
         password: 'google auth',
+        parent: parentUser._id, // Set the parent
       });
 
       await user.save();
@@ -201,7 +241,6 @@ const googleLogin = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
-
 
 export default {
   register,
