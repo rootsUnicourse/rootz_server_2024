@@ -43,6 +43,8 @@ export const updateWallet = async (req, res) => {
 export const getTransactions = async (req, res) => {
   try {
     const wallet = await Wallet.findOne({ user: req.user.userId }).populate("transactions");
+    console.log(wallet.transactions);
+    
     if (!wallet) {
       return res.status(404).json({ message: "Wallet not found" });
     }
