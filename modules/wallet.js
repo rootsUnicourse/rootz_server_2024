@@ -8,10 +8,10 @@ const WalletSchema = new mongoose.Schema({
     required: true,
     unique: true // Ensure one wallet per user
   },
-  moneyEarned: { type: Number, default: 0 },
-  moneyWaiting: { type: Number, default: 0 },
-  moneyApproved: { type: Number, default: 0 },
-  cashWithdrawn: { type: Number, default: 0 },
+  moneyEarned: { type: mongoose.Types.Decimal128, default: '0.00' },
+  moneyWaiting: { type: mongoose.Types.Decimal128, default: '0.00' },
+  moneyApproved: { type: mongoose.Types.Decimal128, default: '0.00' },
+  cashWithdrawn: { type: mongoose.Types.Decimal128, default: '0.00' },
   transactions: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Transaction'

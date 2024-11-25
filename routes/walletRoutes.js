@@ -16,4 +16,7 @@ router.get("/transactions", walletController.getTransactions);
 // Add a new transaction
 router.post("/transactions", walletController.addTransaction);
 
+// Simulate a purchase
+router.post("/purchase", walletController.simulatePurchase);
+
 export default router;

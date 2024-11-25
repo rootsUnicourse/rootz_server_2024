@@ -13,6 +13,7 @@ const ShopSchema = new mongoose.Schema({
     description: { type: String, required: true },
 });
 
-const Shop = mongoose.model('Shop', ShopSchema);
+// Check if the model already exists, and if so, use it; otherwise, define it
+const Shop = mongoose.models.Shop || mongoose.model('Shop', ShopSchema);
 
 export default Shop;
