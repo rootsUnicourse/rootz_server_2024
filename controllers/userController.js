@@ -2,7 +2,9 @@ import User from '../modules/User.js';
 import crypto from 'crypto';
 import nodemailer from 'nodemailer';
 import bcrypt from 'bcryptjs';
-import Shop from '../modules/shop.js'; // Updated import for shops
+import mongoose from 'mongoose';
+import Transaction from '../modules/transaction.js';
+
 
 const getAllUsers = async (req, res) => {
   try {
@@ -13,27 +15,71 @@ const getAllUsers = async (req, res) => {
   }
 };
 
+const enrichUserWithEarnings = async (user, walletId) => {
+  // Calculate earnings from this user
+  const earnings = await Transaction.aggregate([
+    {
+      $match: {
+        wallet: new mongoose.Types.ObjectId(walletId),
+        fromUser: new mongoose.Types.ObjectId(user._id),
+      },
+    },
+    {
+      $group: {
+        _id: null,
+        totalEarned: { $sum: '$amount' },
+      },
+    },
+  ]);
+
+  const totalEarned =
+    earnings.length > 0
+      ? earnings[0].totalEarned
+      : mongoose.Types.Decimal128.fromString('0');
+
+  // Recursively enrich children
+  let enrichedChildren = [];
+  if (user.children && user.children.length > 0) {
+    enrichedChildren = await Promise.all(
+      user.children.map(async (child) => {
+        // Populate child's children
+        const populatedChild = await User.findById(child._id).populate('children');
+        return await enrichUserWithEarnings(populatedChild, walletId);
+      })
+    );
+  }
+
+  // Return enriched user
+  return {
+    ...user.toObject(),
+    amountEarnedFromChild: totalEarned,
+    children: enrichedChildren,
+  };
+};
+
 // Get user profile with family tree
 const getProfile = async (req, res) => {
   try {
-    const userId = req.user.userId; // Assuming JWT middleware sets req.user.userId
+    const userId = req.user.userId;
+
+    // Fetch user and populate immediate children
     const user = await User.findById(userId)
       .populate('wallet')
-      .populate({
-        path: 'children',
-        populate: {
-          path: 'children', // This will populate grandchildren
-          model: 'User',
-        },
-      });
+      .populate('children');
 
     if (!user) {
       return res.status(404).json({ message: 'User not found!' });
     }
 
-    res.json({ user });
+    // Enrich user with earnings from descendants
+    const enrichedUser = await enrichUserWithEarnings(user, user.wallet._id);
+
+    res.json({ user: enrichedUser });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('getProfile error:', error);
+    res
+      .status(500)
+      .json({ message: 'Error fetching profile', error: error.message });
   }
 };
 

@@ -8,7 +8,7 @@ import Decimal from 'decimal.js';
 // Get wallet details for the logged-in user
 export const getWallet = async (req, res) => {
   try {
-    
+
     const wallet = await Wallet.findOne({ user: req.user.userId }).populate("transactions");
     if (!wallet) {
       return res.status(404).json({ message: "Wallet not found" });
@@ -46,7 +46,7 @@ export const updateWallet = async (req, res) => {
 export const getTransactions = async (req, res) => {
   try {
     const wallet = await Wallet.findOne({ user: req.user.userId }).populate("transactions");
-    
+
     if (!wallet) {
       return res.status(404).json({ message: "Wallet not found" });
     }
@@ -152,68 +152,147 @@ export const simulatePurchase = async (req, res) => {
       return res.status(500).json({ message: "One or more wallets not found" });
     }
 
-    // Update wallets
-    // We'll use mongoose session to handle transactions
+    // Start a mongoose session
     const session = await mongoose.startSession();
     session.startTransaction();
     try {
-      // Update buyer's wallet
-      buyerWallet.moneyEarned = new Decimal(buyerWallet.moneyEarned.toString()).add(buyerCommission).toString();
-      await buyerWallet.save({ session });
+      // Map to store wallet updates
+      const walletUpdates = {};
 
-      // Update father's wallet
-      fatherWallet.moneyEarned = new Decimal(fatherWallet.moneyEarned.toString()).add(fatherCommission).toString();
-      await fatherWallet.save({ session });
+      // Helper function to accumulate commissions
+      const accumulateCommission = (walletId, commission) => {
+        if (!walletUpdates[walletId]) {
+          walletUpdates[walletId] = {
+            commission: new Decimal(0),
+            wallet: null,
+            transactions: [],
+          };
+        }
+        walletUpdates[walletId].commission = walletUpdates[walletId].commission.plus(commission);
+      };
 
-      // Update grandfather's wallet
-      grandfatherWallet.moneyEarned = new Decimal(grandfatherWallet.moneyEarned.toString()).add(grandfatherCommission).toString();
-      await grandfatherWallet.save({ session });
+      // Accumulate commissions for each wallet
+      accumulateCommission(buyerWallet._id.toString(), buyerCommission);
+      accumulateCommission(fatherWallet._id.toString(), fatherCommission);
+      accumulateCommission(grandfatherWallet._id.toString(), grandfatherCommission);
+      accumulateCommission(companyWallet._id.toString(), companyCommission);
 
-      // Update company's wallet
-      companyWallet.moneyEarned = new Decimal(companyWallet.moneyEarned.toString()).add(companyCommission).toString();
-      await companyWallet.save({ session });
+      // Prepare transaction data
+      const transactionData = [];
 
-      // Create transaction for buyer
-      const transaction = new Transaction({
-        wallet: buyerWallet._id,
-        type: 'earned',
-        amount: mongoose.Types.Decimal128.fromString(buyerCommission.toFixed(2)),
-        description: `Cashback from purchase at ${shop.title}`,
-        commissions: {
-          buyer: mongoose.Types.Decimal128.fromString(buyerCommission.toFixed(2)),
-          father: mongoose.Types.Decimal128.fromString(fatherCommission.toFixed(2)),
-          grandfather: mongoose.Types.Decimal128.fromString(grandfatherCommission.toFixed(2)),
-          company: mongoose.Types.Decimal128.fromString(companyCommission.toFixed(2)),
+      // Buyer transaction
+      transactionData.push({
+        walletId: buyerWallet._id.toString(),
+        transaction: {
+          type: 'earned',
+          amount: buyerCommission,
+          description: `Cashback from purchase at ${shop.title}`,
+          shop: shop._id,
+          status: 'Completed',
         },
-        shop: shop._id,
       });
 
-      await transaction.save({ session });
+      // Father transaction
+      transactionData.push({
+        walletId: fatherWallet._id.toString(),
+        transaction: {
+          type: 'earned',
+          amount: fatherCommission,
+          description: `Commission from your child ${user.name}'s purchase at ${shop.title}`,
+          fromUser: user._id,
+          shop: shop._id,
+          status: 'Completed',
+        },
+      });
 
-      // Add transaction to buyer's wallet
-      buyerWallet.transactions.push(transaction._id);
-      await buyerWallet.save({ session });
+      // Grandfather transaction
+      transactionData.push({
+        walletId: grandfatherWallet._id.toString(),
+        transaction: {
+          type: 'earned',
+          amount: grandfatherCommission,
+          description: `Commission from your grandchild ${user.name}'s purchase at ${shop.title}`,
+          fromUser: user._id,
+          shop: shop._id,
+          status: 'Completed',
+        },
+      });
 
+      // Company transaction
+      transactionData.push({
+        walletId: companyWallet._id.toString(),
+        transaction: {
+          type: 'earned',
+          amount: companyCommission,
+          description: `Commission from user ${user.name}'s purchase at ${shop.title}`,
+          fromUser: user._id,
+          shop: shop._id,
+          status: 'Completed',
+        },
+      });
+
+      // Fetch all unique wallets involved
+      const uniqueWalletIds = [...new Set(Object.keys(walletUpdates))];
+      const wallets = await Wallet.find({ _id: { $in: uniqueWalletIds } }).session(session);
+
+      // Map wallets by their IDs
+      wallets.forEach((wallet) => {
+        walletUpdates[wallet._id.toString()].wallet = wallet;
+      });
+
+      // Update wallets and create transactions
+      for (const data of transactionData) {
+        const { walletId, transaction } = data;
+        const walletUpdate = walletUpdates[walletId];
+
+        // Create transaction
+        const newTransaction = new Transaction({
+          wallet: walletId,
+          ...transaction,
+          amount: mongoose.Types.Decimal128.fromString(transaction.amount.toFixed(2)),
+        });
+        await newTransaction.save({ session });
+
+        // Add transaction to wallet
+        walletUpdate.wallet.transactions.push(newTransaction._id);
+        walletUpdate.transactions.push(newTransaction);
+      }
+
+      // Update moneyEarned for each wallet
+      for (const walletId of uniqueWalletIds) {
+        const walletUpdate = walletUpdates[walletId];
+        const wallet = walletUpdate.wallet;
+        const currentMoneyEarned = wallet.moneyEarned
+          ? new Decimal(wallet.moneyEarned.toString())
+          : new Decimal(0);
+        const newMoneyEarned = currentMoneyEarned.plus(walletUpdate.commission);
+        wallet.moneyEarned = mongoose.Types.Decimal128.fromString(newMoneyEarned.toFixed(2));
+
+        await wallet.save({ session });
+      }
+
+      // Commit the transaction
       await session.commitTransaction();
       session.endSession();
 
-      res.status(200).json({ message: "Purchase simulated successfully", transaction });
+      res.status(200).json({ message: "Purchase simulated successfully" });
     } catch (error) {
       await session.abortTransaction();
       session.endSession();
-      throw error;
+      console.error('simulatePurchase transaction error:', error);
+      res.status(500).json({ message: 'Error during transaction', error: error.message });
     }
-
   } catch (error) {
     console.error('simulatePurchase error:', error);
     res.status(500).json({ message: 'Error simulating purchase', error: error.message });
   }
 };
 
+
 export default {
   getWallet,
   updateWallet,
   getTransactions,
   addTransaction,
-  simulatePurchase, 
+  simulatePurchase,
 };

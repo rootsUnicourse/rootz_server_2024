@@ -15,13 +15,7 @@ const TransactionSchema = new mongoose.Schema({
   amount: { type: mongoose.Types.Decimal128, required: true },
   description: { type: String },
   date: { type: Date, default: Date.now },
-  // New fields to store commission breakdown
-  commissions: {
-    buyer: { type: mongoose.Types.Decimal128, required: true },
-    father: { type: mongoose.Types.Decimal128, default: '0.00' },
-    grandfather: { type: mongoose.Types.Decimal128, default: '0.00' },
-    company: { type: mongoose.Types.Decimal128, required: true },
-  },
+  fromUser: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // New field
   shop: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Shop',
@@ -31,6 +25,6 @@ const TransactionSchema = new mongoose.Schema({
   timestamps: true 
 });
 
-const Transaction = mongoose.model('Transaction', TransactionSchema);
+const Transaction = mongoose.models.Transaction || mongoose.model('Transaction', TransactionSchema);
 
 export default Transaction;

@@ -162,23 +162,26 @@ const googleLogin = async (req, res) => {
 
     const payload = ticket.getPayload(); // Get user info from the payload
 
+    // Normalize the email
     const email = payload['email'].toLowerCase().trim();
 
     // Check if the user exists in the database
     let user = await User.findOne({ email });
 
     if (!user) {
+      // If the user does not exist, proceed to create a new user
+
       let parentUser;
 
-      // Check if the user being logged in is the root user
-      if (email === 'amit@rootz.website') {
-        // Root user does not have a parent
-        parentUser = null;
-      } else if (parentId) {
+      // Determine the parent user
+      if (parentId) {
         parentUser = await User.findById(parentId);
         if (!parentUser) {
           return res.status(400).json({ message: 'Invalid parent ID.' });
         }
+      } else if (email === 'amit@rootz.website') {
+        // Root user does not have a parent
+        parentUser = null;
       } else {
         // Assign rootz as the parent
         parentUser = await User.findOne({ email: 'amit@rootz.website' });
@@ -220,25 +223,32 @@ const googleLogin = async (req, res) => {
       user.wallet = newWallet._id;
       await user.save();
     } else {
+      // If the user exists, proceed with login
+
       // Update user's profile picture if it's not already set
       if (!user.profilePicture) {
         user.profilePicture = payload['picture'];
         await user.save();
       }
 
-      // Check if the user already has a wallet; if not, create one
+      // Ensure the user has a wallet; if not, create one
       if (!user.wallet) {
-        const newWallet = await Wallet.create({
-          user: user._id,
-          moneyEarned: 0,
-          moneyWaiting: 0,
-          moneyApproved: 0,
-          cashWithdrawn: 0,
-          transactions: [],
-        });
-
-        user.wallet = newWallet._id;
-        await user.save();
+        const existingWallet = await Wallet.findOne({ user: user._id });
+        if (existingWallet) {
+          user.wallet = existingWallet._id;
+          await user.save();
+        } else {
+          const newWallet = await Wallet.create({
+            user: user._id,
+            moneyEarned: 0,
+            moneyWaiting: 0,
+            moneyApproved: 0,
+            cashWithdrawn: 0,
+            transactions: [],
+          });
+          user.wallet = newWallet._id;
+          await user.save();
+        }
       }
     }
 
@@ -248,9 +258,11 @@ const googleLogin = async (req, res) => {
     // Respond with the token and user information
     res.json({ token, user });
   } catch (error) {
+    console.error('googleLogin error:', error);
     res.status(500).json({ message: error.message });
   }
 };
+
 
 
 export default {
