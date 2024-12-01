@@ -288,6 +288,35 @@ export const simulatePurchase = async (req, res) => {
   }
 };
 
+export const getTransactionsByPage = async (req, res) => {
+  try {
+    const { page = 1, limit = 10 } = req.query; // Extract page and limit from query params
+    const wallet = await Wallet.findOne({ user: req.user.userId }).populate({
+      path: 'transactions',
+      options: {
+        sort: { date: -1 }, // Sort transactions by date in descending order
+        skip: (page - 1) * limit, // Skip documents for pagination
+        limit: parseInt(limit), // Limit the number of documents
+      },
+    });
+
+    if (!wallet) {
+      return res.status(404).json({ message: 'Wallet not found' });
+    }
+
+    const totalTransactions = await Transaction.countDocuments({ wallet: wallet._id }); // Count total transactions
+    res.json({
+      transactions: wallet.transactions,
+      total: totalTransactions,
+      page: parseInt(page),
+      pages: Math.ceil(totalTransactions / limit),
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error });
+  }
+};
+
+
 
 export default {
   getWallet,
@@ -295,4 +324,5 @@ export default {
   getTransactions,
   addTransaction,
   simulatePurchase,
+  getTransactionsByPage
 };

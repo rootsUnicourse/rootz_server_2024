@@ -13,6 +13,9 @@ router.put("/", walletController.updateWallet);
 // Get transactions for a wallet
 router.get("/transactions", walletController.getTransactions);
 
+// Get transactions for a wallet by page
+router.get("/transactions-by-page", walletController.getTransactionsByPage);
+
 // Add a new transaction
 router.post("/transactions", walletController.addTransaction);
 
