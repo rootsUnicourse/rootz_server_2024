@@ -118,7 +118,7 @@ const requestPasswordReset = async (req, res) => {
       html: `
         <h1>Password Reset Request</h1>
         <p>You have requested a password reset. Please click on the following link, or paste this into your browser to complete the process:</p>
-        <a href="http://localhost:3001/password-reset/${resetToken}">Reset Password</a>
+        <a href="${process.env.BASE_URL}/password-reset/${resetToken}">Reset Password</a>
         <p>If you did not request this, please ignore this email.</p>
       `,
     };
