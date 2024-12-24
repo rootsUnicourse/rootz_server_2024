@@ -1,6 +1,6 @@
 import Wallet from '../modules/Wallet.js';
 import Transaction from '../modules/transaction.js';
-import Shop from '../modules/Shop.js';
+import Shop from '../modules/shop.js';
 import User from '../modules/User.js';
 import SiteStats from "../modules/siteStats.js"; // Ensure this model exists
 

@@ -1,7 +1,7 @@
 import Wallet from "../modules/Wallet.js";
 import Transaction from "../modules/transaction.js";
 import User from "../modules/User.js";
-import Shop from "../modules/Shop.js";
+import Shop from "../modules/shop.js";
 import mongoose from 'mongoose';
 import Decimal from 'decimal.js';
 
