@@ -1,5 +1,5 @@
 import Wallet from '../modules/Wallet.js';
-import Transaction from '../modules/Transaction.js';
+import Transaction from '../modules/transaction.js';
 import Shop from '../modules/Shop.js';
 import User from '../modules/User.js';
 import SiteStats from "../modules/siteStats.js"; // Ensure this model exists

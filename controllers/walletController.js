@@ -1,5 +1,5 @@
 import Wallet from "../modules/Wallet.js";
-import Transaction from "../modules/Transaction.js";
+import Transaction from "../modules/transaction.js";
 import User from "../modules/User.js";
 import Shop from "../modules/Shop.js";
 import mongoose from 'mongoose';

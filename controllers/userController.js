@@ -3,7 +3,7 @@ import crypto from 'crypto';
 import nodemailer from 'nodemailer';
 import bcrypt from 'bcryptjs';
 import mongoose from 'mongoose';
-import Transaction from '../modules/Transaction.js';
+import Transaction from '../modules/transaction.js';
 
 
 const getAllUsers = async (req, res) => {
