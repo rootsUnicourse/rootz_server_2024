@@ -1,4 +1,4 @@
-import Shop from "../modules/shop.js";
+import Shop from "../modules/Shop.js";
 
 export const getShops = async (req, res) => {
     try {
