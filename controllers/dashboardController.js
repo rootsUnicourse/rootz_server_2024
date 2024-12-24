@@ -2,7 +2,9 @@ import Wallet from '../modules/wallet.js';
 import Transaction from '../modules/transaction.js';
 import Shop from '../modules/shop.js';
 import User from '../modules/User.js';
-import SiteStats from "../modules/siteStats.js"; // Ensure this model exists
+import SiteStats from "../modules/siteStats.js";
+import geoip from "geoip-lite"; // For location tracking
+import os from "os"; // For fetching computer name (optional)
 
 // Fetch dashboard data
 export const getDashboardData = async (req, res) => {
@@ -56,20 +58,55 @@ export const getDashboardData = async (req, res) => {
 };
 
 export const incrementSiteVisits = async (req, res) => {
-    try {
-      // Increment siteVisits without session tracking
-      const siteStats = await SiteStats.findOneAndUpdate(
-        { key: "siteVisits" }, // Find the document with key "siteVisits"
-        { $inc: { value: 1 } }, // Increment the value by 1
-        { new: true, upsert: true } // Create the document if it doesn't exist
-      );
-  
-      res.status(200).json(siteStats);
-    } catch (error) {
-      res.status(500).json({ message: error.message });
-    }
-  };
-  
+  try {
+    const sessionId = req.headers["x-session-id"];
+    const { userId } = req.body;
+    console.log(userId);
+    
+    let visitor = {};
 
-  
+    // Check if the session is already tracked
+    if (sessionId) {
+      const sessionExists = await SiteStats.findOne({ "visitors.sessionId": sessionId });
+      if (sessionExists) {
+        return res.status(200).json({ message: "Visit already tracked for this session." });
+      }
+    }
+
+    // Collect visitor details
+    if (userId) {
+      const user = await User.findById(userId);
+      visitor = { userId: user._id, userName: user.name, userEmail: user.email };
+    } else {
+      // Handle guest user
+      visitor = { userName: "Guest" };
+    }
+
+    const siteStats = await SiteStats.findOneAndUpdate(
+      { key: "siteVisits" },
+      {
+        $inc: { value: 1 },
+        $push: { visitors: { ...visitor, timestamp: new Date(), sessionId } },
+      },
+      { new: true, upsert: true }
+    );
+
+    res.status(200).json(siteStats);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+
+export const getVisitors = async (req, res) => {
+  try {
+    const siteStats = await SiteStats.findOne({ key: "siteVisits" }).select("visitors");
+    res.status(200).json(siteStats?.visitors || []);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+
+
 
