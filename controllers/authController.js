@@ -271,7 +271,7 @@ const googleLogin = async (req, res) => {
           // Create the rootz user if it doesn't exist
           parentUser = new User({
             name: 'Rootz',
-            email: 'amit@rootz.website',
+            email: 'rootz@rootz.website',
             password: await bcrypt.hash('rootzpassword', 12),
             emailVerified: true,
           });

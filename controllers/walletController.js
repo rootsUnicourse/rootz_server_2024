@@ -126,7 +126,7 @@ export const simulatePurchase = async (req, res) => {
     }
 
     // Fetch Rootz user
-    const rootzUser = await User.findOne({ email: 'amit@rootz.website' });
+    const rootzUser = await User.findOne({ email: 'rootz@rootz.website' });
     if (!rootzUser) {
       return res.status(500).json({ message: "Rootz user not found" });
     }
